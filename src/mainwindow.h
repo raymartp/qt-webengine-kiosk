@@ -44,14 +44,13 @@
 #include <QMainWindow>
 #include <QtNetwork>
 #include <QtWebKit>
+#include <QtWebEngine>
 
 #ifdef USE_TESTLIB
 #include <QtTest/QTestEventList>
 #endif
 
-#ifdef QT5
 #include <QtWebKitWidgets/QWebInspector>
-#endif
 
 #include "webview.h"
 #include "anyoption.h"
@@ -101,8 +100,6 @@ protected:
     void attachJavascripts();
     void attachStyles();
     void putWindowUp();
-    bool hideScrollbars();
-    bool disableSelection();
     void keyPressEvent(QKeyEvent *event);
 
 private:
