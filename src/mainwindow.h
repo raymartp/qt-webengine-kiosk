@@ -56,6 +56,9 @@
 #include "anyoption.h"
 #include "unixsignals.h"
 
+#ifndef MAIN_WINDOW_H
+#define MAIN_WINDOW_H
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -67,6 +70,10 @@ public:
 
     void clearCache();
     void clearCacheOnExit();
+
+    void showFullScreen();
+
+    QNetworkAccessManager *nam;
 
 protected slots:
 
@@ -114,6 +121,8 @@ private:
 
     AnyOption *cmdopts;
     UnixSignals *handler;
+    int manualScreen;
+    int computedScreen();
 
 #ifdef USE_TESTLIB
     QTestEventList *simulateClick;
@@ -129,3 +138,5 @@ private:
     QTimer *delayedResize;
     QTimer *delayedLoad;
 };
+
+#endif
