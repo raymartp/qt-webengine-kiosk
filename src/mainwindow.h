@@ -58,6 +58,8 @@
 #ifndef MAIN_WINDOW_H
 #define MAIN_WINDOW_H
 
+#define qsl(...) QStringList({__VA_ARGS__})
+
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
@@ -65,7 +67,7 @@ class MainWindow : public QMainWindow
 public:
     explicit MainWindow();
 
-    void init(AnyOption *cmdopts);
+    void init(QCommandLineParser&);
 
     void clearCache();
     void clearCacheOnExit();
@@ -132,6 +134,7 @@ private:
     bool isSelectionDisabled;
     bool isUrlRealyChanged;
 
+    QString configPath;
     void loadSettings(QString ini_file);
 
     QTimer *delayedResize;

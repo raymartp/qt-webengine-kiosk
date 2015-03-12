@@ -34,60 +34,33 @@
 
 #include <QApplication>
 #include "mainwindow.h"
-#include "anyoption.h"
-
-bool launch(AnyOption *cmdopts)
-{
-    cmdopts->addUsage("This is a simple web-browser working in fullscreen kiosk-mode.");
-    cmdopts->addUsage("");
-    cmdopts->addUsage("Usage: ");
-    cmdopts->addUsage("");
-    cmdopts->addUsage(" -h --help                           Print usage and exit");
-    cmdopts->addUsage(" -v --version                        Print version and exit");
-    cmdopts->addUsage(" -c --config options.ini             Configuration INI-file");
-    cmdopts->addUsage(" -u --uri http://www.example.com/    Open this URI, home page");
-    cmdopts->addUsage(" -C --clear-cache                    Clear cached request data");
-    cmdopts->addUsage("");
-
-    cmdopts->setFlag("help", 'h');
-    cmdopts->setFlag("version", 'v');
-    cmdopts->setFlag("clear-cache", 'C');
-
-    cmdopts->setOption("config", 'c');
-    cmdopts->setOption("uri", 'u');
-    cmdopts->setOption("monitors", 'm');
-
-    cmdopts->setVersion(VERSION);
-
-    cmdopts->processCommandArgs( QCoreApplication::arguments().length(), QCoreApplication::arguments() );
 
 
-    if (cmdopts->getFlag('h') || cmdopts->getFlag("help")) {
-        qDebug(">> Help option in command prompt...");
-        cmdopts->printUsage();
-        return false;
-    }
-
-    if (cmdopts->getFlag('v') || cmdopts->getFlag("version")) {
-        qDebug(">> Version option in command prompt...");
-        cmdopts->printVersion();
-        return false;
-    }
-
-    return true;
-}
 
 int main(int argc, char * argv[])
 {
     QApplication app(argc, argv);
+    app.setApplicationName("Qt WebEngine Kiosk");
 
-    AnyOption *cmdopts = new AnyOption();
-    if (!launch(cmdopts)) {
-        return 0;
-    }
+    QCommandLineParser parser;
+    parser.setApplicationDescription("A kiosk browser based on Qt's Chromium-derived WebEngine component");
+    parser.addHelpOption();
+    parser.addVersionOption();
+
+    QList<QCommandLineOption> options = QList<QCommandLineOption>({
+            {{"clear-cache","C"}, "Clear cached request data"},
+            {{"uri","u"}, "Set starting url to <uri>", "uri"},
+            {{"monitor", "m"}, "Display window on the <n>th monitor", "n"},
+            {{"config", "c"}, "Use <file> to configure this instance of qt-webengine-kiosk", "file"}
+            });
+
+    parser.addOptions(options);
+    parser.process(app);
+
+
 
     MainWindow *browser = new MainWindow();
-    browser->init(cmdopts);
+    browser->init(parser);
 
     // executes browser.cleanupSlot() when the Qt framework emits aboutToQuit() signal.
     QObject::connect(qApp, SIGNAL(aboutToQuit()),
@@ -95,4 +68,5 @@ int main(int argc, char * argv[])
 
     int ret = app.exec();
     qDebug() << "Application return:" << ret;
+
 }

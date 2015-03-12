@@ -77,25 +77,20 @@ MainWindow::MainWindow() : QMainWindow()
 
 }
 
-void MainWindow::init(AnyOption *opts)
+void MainWindow::init(QCommandLineParser &options)
 {
-    cmdopts = opts;
+
     nam = new QNetworkAccessManager(this);
     manualScreen = 0;
-    if (cmdopts->getValue("config") || cmdopts->getValue('c')) {
-        qDebug(">> Config option in command prompt...");
-        QString cfgPath = cmdopts->getValue('c');
-        if (cfgPath.isEmpty()) {
-            cfgPath = cmdopts->getValue("config");
-        }
-        loadSettings(cfgPath);
-    } else {
-        loadSettings(QString(""));
-    }
 
-    if (cmdopts->getValue('m')) {
+    if (!(configPath = options.value("config")).isEmpty()) {
+        qDebug(">> Config option in command prompt...");
+    }
+    loadSettings(configPath);
+
+    QString monitorString;
+    if (!(monitorString = options.value("monitor")).isEmpty()) {
         qDebug("setting monitor");
-        QString monitorString = cmdopts->getValue('m');
         bool ok;
         int monitorNum = monitorString.toInt(&ok);
         manualScreen = ok ? monitorNum : 0;
@@ -124,12 +119,9 @@ void MainWindow::init(AnyOption *opts)
        mainSettings->value("application/icon").toString()
     ));
 
-    if (cmdopts->getValue("uri") || cmdopts->getValue('u')) {
+    QString uri;
+    if (!(uri = options.value("uri")).isEmpty()) {
         qDebug(">> Uri option in command prompt...");
-        QString uri = cmdopts->getValue('u');
-        if (uri.isEmpty()) {
-            uri = cmdopts->getValue("uri");
-        }
         mainSettings->setValue("browser/homepage", uri);
     }
 
@@ -813,16 +805,7 @@ void MainWindow::putWindowUp()
  */
 void MainWindow::unixSignalHup()
 {
-    if (cmdopts->getValue("config") || cmdopts->getValue('c')) {
-        qDebug(">> Config option in command prompt...");
-        QString cfgPath = cmdopts->getValue('c');
-        if (cfgPath.isEmpty()) {
-            cfgPath = cmdopts->getValue("config");
-        }
-        loadSettings(cfgPath);
-    } else {
-        loadSettings(QString(""));
-    }
+    loadSettings(configPath);
 }
 
 /**
@@ -840,16 +823,7 @@ void MainWindow::unixSignalUsr1()
         view->loadCustomPage(mainSettings->value("signals/SIGUSR1").toString());
     } else {
         qDebug(">> SIGUSR1 >> Load config file...");
-        if (cmdopts->getValue("config") || cmdopts->getValue('c')) {
-            qDebug(">> Config option in command prompt...");
-            QString cfgPath = cmdopts->getValue('c');
-            if (cfgPath.isEmpty()) {
-                cfgPath = cmdopts->getValue("config");
-            }
-            loadSettings(cfgPath);
-        } else {
-            loadSettings(QString(""));
-        }
+        loadSettings(configPath);
         view->loadHomepage();
     }
 }

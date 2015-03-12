@@ -55,7 +55,6 @@ message(- VERSION: $${VERSION})
 SOURCES += main.cpp\
     mainwindow.cpp \
     webview.cpp \
-    anyoption.cpp \
     fakewebview.cpp \
     cachingnm.cpp \
     unixsignals.cpp \
@@ -65,7 +64,6 @@ SOURCES += main.cpp\
 
 HEADERS  += mainwindow.h \
     webview.h \
-    anyoption.h \
     config.h \
     qplayer.h \
     fakewebview.h \
