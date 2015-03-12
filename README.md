@@ -15,4 +15,5 @@ Also hides printer dialog and uses default or defined printer.
 
 ##Downloads
 
-TBA when I get some windows builds happening
+Available on https://github.com/akdor1154/qt-webengine-kiosk/releases
+
