@@ -39,6 +39,7 @@
 **
 ****************************************************************************/
 
+#include <functional>
 #include <QtGui>
 #include <QProgressBar>
 #include <QMainWindow>
@@ -52,13 +53,18 @@
 //#include <QtWebEngineWidgets/QWebInspector>
 
 #include "webview.h"
-#include "anyoption.h"
 #include "unixsignals.h"
 
 #ifndef MAIN_WINDOW_H
 #define MAIN_WINDOW_H
 
 #define qsl(...) QStringList({__VA_ARGS__})
+
+struct keyFunction {
+    Qt::Key key;
+    std::function<void()> f;
+};
+
 
 class MainWindow : public QMainWindow
 {
@@ -73,7 +79,7 @@ public:
     void clearCacheOnExit();
 
     void showFullScreen();
-
+    qreal getPixelRatio();
     QNetworkAccessManager *nam;
 
 protected slots:
@@ -104,26 +110,30 @@ protected slots:
 
 protected:
 
+    void moveEvent(QMoveEvent *);
     void centerFixedSizeWindow();
     void attachJavascripts();
     void attachStyles();
     void putWindowUp();
     void keyPressEvent(QKeyEvent *event);
+    void updatePixelRatio();
 
 private:
-    WebView *view;                      // Webkit Page View
+    WebView* view;                      // Webkit Page View
     QProgressBar *loadProgress;         // progress bar to display page loading
 
+    QHash<QString, QVariant> defaultSettings;
     QSettings *mainSettings;
     QNetworkDiskCache *diskCache;
     //QWebInspector *inspector;
 
+    QMap<QKeySequence, std::function<void()>> shortcutKeys;
     QKeyEvent * eventExit;
 
-    AnyOption *cmdopts;
     UnixSignals *handler;
     int manualScreen;
     int computedScreen();
+    qreal pixelRatio;
 
 #ifdef USE_TESTLIB
     QTestEventList *simulateClick;

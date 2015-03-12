@@ -11,12 +11,15 @@
 #include <qplayer.h>
 #include <fakewebview.h>
 
+//#include "mainwindow.h"
+class MainWindow;
+
 class WebView : public QWebEngineView
 {
     Q_OBJECT
 
 public:
-    explicit WebView(QWidget* parent = 0);
+    explicit WebView(MainWindow* parent = 0);
 
     void setSettings(QSettings *settings);
     void loadCustomPage(QString uri);
@@ -28,12 +31,15 @@ public:
     QWebEngineView *createWindow(QWebEnginePage::WebWindowType type);
 
     void playSound(QString soundSetting);
+    void updateZoom();
 
     QIcon icon();
 
 
 public slots:
+#ifdef PRINTING_POSSIBLE
     void handlePrintRequested(QWebEnginePage *);
+#endif
     void handleUrlChanged(const QUrl &);
 
 signals:

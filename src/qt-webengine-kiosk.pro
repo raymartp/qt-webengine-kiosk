@@ -6,7 +6,7 @@
 
 QT       = core gui network widgets printsupport multimedia testlib webenginewidgets
 
-CONFIG += console link_pkgconfig
+CONFIG += console link_pkgconfig c++11
 TARGET = qt-webengine-kiosk
 TEMPLATE = app
 VERSION = 1.99.3

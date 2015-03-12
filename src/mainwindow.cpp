@@ -55,6 +55,8 @@
 #include "cachingnm.h"
 #include "persistentcookiejar.h"
 
+class WebView;
+
 MainWindow::MainWindow() : QMainWindow()
 {
     progress = 0;
@@ -82,6 +84,84 @@ void MainWindow::init(QCommandLineParser &options)
 
     nam = new QNetworkAccessManager(this);
     manualScreen = 0;
+
+
+    defaultSettings = {
+        {"application/organization", "Organization"},
+        {"application/organization-domain", "www.example.com"},
+        {"application/name", "Qt WebEngine Kiosk"},
+        {"application/version", VERSION},
+        {"application/icon", ICON },
+        {"proxy/enable", false },
+        {"proxy/system", true },
+        {"proxy/host", "proxy.example.com" },
+        {"proxy/port", 3128},
+        {"proxy/auth", false },
+        {"proxy/username", "username"},
+        {"proxy/password", "password"},
+        {"view/fullscreen", true},
+        {"view/maximized", false},
+        {"view/fixed-size", false},
+        {"view/fixed-width", 800},
+        {"view/fixed-height", 600},
+        {"view/minimal-width", 320},
+        {"view/minimal-height", 200},
+        {"view/fixed-centered", true},
+        {"view/fixed-x", 0},
+        {"view/fixed-y", 0},
+        {"view/startup_resize_delayed", true},
+        {"view/startup_resize_delay", 200},
+        {"view/hide_scrollbars", true},
+        {"view/stay_on_top", false},
+        {"view/disable_selection", true},
+        {"view/show_load_progress", true},
+        {"view/scale_with_dpi", true},
+        {"view/page_scale", 1.0},
+        {"browser/homepage", RESOURCES"default.html"},
+        {"browser/javascript", true},
+        {"browser/javascript_can_open_windows", false},
+        {"browser/javascript_can_close_windows", false},
+        {"browser/webgl", false},
+        {"browser/java", false},
+        {"browser/plugins", true},
+        {"browser/ignore_ssl_errors", true},     // Don't break on SSL errors
+        {"browser/cookiejar", false},
+        {"browser/show_homepage_on_window_close", true},        // Show default homepage if window closed by javascript
+        {"browser/startup_load_delayed", true},
+        {"browser/startup_load_delay", 100},
+        {"browser/disable_hotkeys", false},
+        {"signals/enable", true},
+        {"signals/SIGUSR1", ""},
+        {"signals/SIGUSR2", ""},
+        {"inspector/enable", false},
+        {"inspector/visible", false},
+        {"event-sounds/enable", false},
+        {"event-sounds/window-clicked", RESOURCES"window-clicked.ogg"},
+        {"event-sounds/link-clicked", RESOURCES"window-clicked.ogg"},
+        {"cache/enable", false},
+        {"cache/location", QStandardPaths::writableLocation(QStandardPaths::CacheLocation)},
+        {"cache/size", 100*1000*1000},
+        {"cache/clear-on-start", false},
+        {"cache/clear-on-exit", false},
+        {"printing/enable", false},
+        {"printing/show-printer-dialog", false},
+        {"printing/printer", "default"},
+        {"printing/page_margin_left", 5},
+        {"printing/page_margin_top", 5},
+        {"printing/page_margin_right", 5},
+        {"printing/page_margin_bottom", 5},
+        {"attach/javascripts", ""},
+        {"attach/styles", ""},
+        {"view/hide_mouse_cursor", false}
+    };
+
+    QString location = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
+
+    QDir d = QDir(location);
+    location += d.separator();
+    location += defaultSettings["application/name"].toString();
+    d.setPath(location);
+    defaultSettings["cache/location"] = d.absolutePath();
 
     if (!(configPath = options.value("config")).isEmpty()) {
         qDebug(">> Config option in command prompt...");
@@ -189,8 +269,6 @@ void MainWindow::init(QCommandLineParser &options)
 
     view->setSettings(mainSettings);
     view->setPage(new QWebEnginePage(view));
-
-
     view->settings()->setAttribute(QWebEngineSettings::JavascriptEnabled,
         mainSettings->value("browser/javascript").toBool()
     );
@@ -210,6 +288,84 @@ void MainWindow::init(QCommandLineParser &options)
 
     QDesktopWidget *desktop = QApplication::desktop();
     connect(desktop, SIGNAL(resized(int)), SLOT(desktopResized(int)));
+
+    shortcutKeys = {
+        //{Qt::Key_Up, [](){view->scrollUp();},
+        //{Qt::Key_Down, [](){view->scrollDown();},
+        //{Qt::Key_PageUp, [](){view->scrollPageUp();},
+        //{Qt::Key_PageDown, [](){view->scrollPageDown();},
+        //{Qt::Key_End, [](){view->scrollEnd();},
+        {
+            Qt::Key_HomePage,
+            [this](){view->loadHomepage();}
+        },
+        //{Qt::Key_Home, [](){ view->scrollHome(); }},
+        {
+            Qt::Key_Home + Qt::CTRL,
+            [this](){view->loadHomepage();}
+        },
+        {
+            QKeySequence::Back,
+            [this](){view->page()->triggerAction(QWebEnginePage::Back);}
+        },
+        {
+            QKeySequence::Forward,
+            [this](){view->page()->triggerAction(QWebEnginePage::Forward);}
+        },
+        {
+            QKeySequence::Quit,
+            [this]() {
+                clearCacheOnExit();
+                QApplication::exit(0);
+            }
+        },
+        {
+            QKeySequence(Qt::Key_F5 + Qt::CTRL, Qt::Key_R+Qt::CTRL+Qt::SHIFT),
+            [this]() {
+                clearCache();
+                view->page()->triggerAction(QWebEnginePage::ReloadAndBypassCache);
+            }
+        },
+        {
+            QKeySequence::Refresh,
+            [this]() {view->reload();}
+        },
+        /*{
+            Qt::Key_F12,
+            [this]() {
+                if (mainSettings->value("inspector/enable").toBool()) {
+                    if (!inspector->isVisible()) {
+                        inspector->setVisible(true);
+                    } else {
+                        inspector->setVisible(false);
+                    }
+                }
+            }
+        },*/
+        {
+            QKeySequence::FullScreen,
+            [this]() {
+                if (isFullScreen()) {
+                    showNormal();
+                } else {
+                    showFullScreen();
+                }
+            }
+        }
+    };
+
+    auto i = shortcutKeys.constBegin();
+    while (i != shortcutKeys.constEnd()) {
+        QAction* tempAction = new QAction(this);
+        tempAction->setShortcut(i.key());
+        tempAction->setShortcutContext(Qt::ApplicationShortcut);
+        connect(tempAction, &QAction::triggered,
+                i.value());
+        this->addAction(tempAction);
+        ++i;
+    }
+
+
 
     show();
     view->page()->view()->setFocusPolicy(Qt::StrongFocus);
@@ -290,10 +446,29 @@ void MainWindow::showFullScreen() {
         }
         QRect screenGeometry = qApp->desktop()->availableGeometry(screen);
         setGeometry(screenGeometry);
+        view->updateZoom();
         qDebug() << "setting geometry:" << screenGeometry;
     }
 
     QMainWindow::showFullScreen();
+    updatePixelRatio();
+}
+
+void MainWindow::moveEvent(QMoveEvent *) {
+    updatePixelRatio();
+}
+
+void MainWindow::updatePixelRatio() {
+    qreal _pixelRatio = (windowHandle()->screen()->logicalDotsPerInch()/96.0);
+    if (pixelRatio != _pixelRatio) {
+        pixelRatio = _pixelRatio;
+        view->updateZoom();
+        qDebug() << "pixel ratio set to: " << pixelRatio;
+    }
+}
+
+qreal MainWindow::getPixelRatio() {
+    return pixelRatio;
 }
 
 int MainWindow::computedScreen() {
@@ -336,9 +511,8 @@ void MainWindow::centerFixedSizeWindow()
 
     move ( x, y );
     setFixedSize( widowWidth, widowHeight );
-
+    updatePixelRatio();
 }
-
 
 void MainWindow::keyPressEvent(QKeyEvent *event)
 {
@@ -347,69 +521,7 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         return;
     }
     qDebug() << "got key: " << event->key();
-    switch (event->key()) {
-    case Qt::Key_Up:
-        //view->scrollUp();
-        break;
-    case Qt::Key_Down:
-        //view->scrollDown();
-        break;
-    case Qt::Key_PageUp:
-        //view->scrollPageUp();
-        break;
-    case Qt::Key_PageDown:
-        //view->scrollPageDown();
-        break;
-    case Qt::Key_End:
-        //view->scrollEnd();
-        break;
-    case Qt::Key_HomePage:
-        view->loadHomepage();
-        break;
-    case Qt::Key_Home:
-        if (int(event->modifiers()) == Qt::CTRL) {
-            view->loadHomepage();
-        } else {
-            //view->scrollHome();
-        }
-        break;
-    case Qt::Key_Backspace:
-        view->page()->triggerAction(QWebEnginePage::Back);
-        break;
-    case Qt::Key_Q:
-        if (int(event->modifiers()) == Qt::CTRL) {
-            clearCacheOnExit();
-            QApplication::exit(0);
-        }
-        break;
-    case Qt::Key_R:
-        if (int(event->modifiers()) == Qt::CTRL) {
-            clearCache();
-            view->reload();
-        }
-        break;
-    case Qt::Key_F5:
-        view->reload();
-        break;
-    case Qt::Key_F12:
- /*       if (mainSettings->value("inspector/enable").toBool()) {
-            if (!inspector->isVisible()) {
-                inspector->setVisible(true);
-            } else {
-                inspector->setVisible(false);
-            }
-        }*/
-        break;
-    case Qt::Key_F11:
-        if (isFullScreen()) {
-            showNormal();
-        } else {
-            showFullScreen();
-        }
-        break;
-    default:
-        QMainWindow::keyPressEvent(event);
-    }
+
 }
 
 /**
@@ -420,6 +532,9 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
  */
 void MainWindow::loadSettings(QString ini_file)
 {
+    if (mainSettings != NULL) {
+        delete mainSettings;
+    }
     if (!ini_file.length()) {
         mainSettings = new QSettings(QSettings::IniFormat, QSettings::UserScope, "QtWebkitKiosk", "config", this);
     } else {
@@ -427,229 +542,12 @@ void MainWindow::loadSettings(QString ini_file)
     }
     qDebug() << "Ini file: " << mainSettings->fileName();
 
-    if (!mainSettings->contains("application/organization")) {
-        mainSettings->setValue("application/organization", "Organization" );
-    }
-    if (!mainSettings->contains("application/organization-domain")) {
-        mainSettings->setValue("application/organization-domain", "www.example.com" );
-    }
-    if (!mainSettings->contains("application/name")) {
-        mainSettings->setValue("application/name", "QtWebkitKiosk" );
-    }
-    if (!mainSettings->contains("application/version")) {
-        mainSettings->setValue("application/version", VERSION );
-    }
-    if (!mainSettings->contains("application/icon")) {
-        mainSettings->setValue("application/icon", ICON );
-    }
-
-    if (!mainSettings->contains("proxy/enable")) {
-        mainSettings->setValue("proxy/enable", false);
-    }
-    if (!mainSettings->contains("proxy/system")) {
-        mainSettings->setValue("proxy/system", true);
-    }
-    if (!mainSettings->contains("proxy/host")) {
-        mainSettings->setValue("proxy/host", "proxy.example.com");
-    }
-    if (!mainSettings->contains("proxy/port")) {
-        mainSettings->setValue("proxy/port", 3128);
-    }
-    if (!mainSettings->contains("proxy/auth")) {
-        mainSettings->setValue("proxy/auth", false);
-    }
-    if (!mainSettings->contains("proxy/username")) {
-        mainSettings->setValue("proxy/username", "username");
-    }
-    if (!mainSettings->contains("proxy/password")) {
-        mainSettings->setValue("proxy/password", "password");
-    }
-
-    if (!mainSettings->contains("view/fullscreen")) {
-        mainSettings->setValue("view/fullscreen", true);
-    }
-    if (!mainSettings->contains("view/maximized")) {
-        mainSettings->setValue("view/maximized", false);
-    }
-    if (!mainSettings->contains("view/fixed-size")) {
-        mainSettings->setValue("view/fixed-size", false);
-    }
-    if (!mainSettings->contains("view/fixed-width")) {
-        mainSettings->setValue("view/fixed-width", 800);
-    }
-    if (!mainSettings->contains("view/fixed-height")) {
-        mainSettings->setValue("view/fixed-height", 600);
-    }
-    if (!mainSettings->contains("view/minimal-width")) {
-        mainSettings->setValue("view/minimal-width", 320);
-    }
-    if (!mainSettings->contains("view/minimal-height")) {
-        mainSettings->setValue("view/minimal-height", 200);
-    }
-    if (!mainSettings->contains("view/fixed-centered")) {
-        mainSettings->setValue("view/fixed-centered", true);
-    }
-    if (!mainSettings->contains("view/fixed-x")) {
-        mainSettings->setValue("view/fixed-x", 0);
-    }
-    if (!mainSettings->contains("view/fixed-y")) {
-        mainSettings->setValue("view/fixed-y", 0);
-    }
-
-    if (!mainSettings->contains("view/startup_resize_delayed")) {
-        mainSettings->setValue("view/startup_resize_delayed", true);
-    }
-    if (!mainSettings->contains("view/startup_resize_delay")) {
-        mainSettings->setValue("view/startup_resize_delay", 200);
-    }
-
-    if (!mainSettings->contains("view/hide_scrollbars")) {
-        mainSettings->setValue("view/hide_scrollbars", true);
-    }
-
-    if (!mainSettings->contains("view/stay_on_top")) {
-        mainSettings->setValue("view/stay_on_top", false);
-    }
-
-    if (!mainSettings->contains("view/disable_selection")) {
-        mainSettings->setValue("view/disable_selection", true);
-    }
-
-    if (!mainSettings->contains("view/show_load_progress")) {
-        mainSettings->setValue("view/show_load_progress", true);
-    }
-
-    if (!mainSettings->contains("view/page_scale")) {
-        mainSettings->setValue("view/page_scale", 1.0);
-    }
-
-
-    if (!mainSettings->contains("browser/homepage")) {
-        mainSettings->setValue("browser/homepage", RESOURCES"default.html");
-    }
-    if (!mainSettings->contains("browser/javascript")) {
-        mainSettings->setValue("browser/javascript", true);
-    }
-    if (!mainSettings->contains("browser/javascript_can_open_windows")) {
-        mainSettings->setValue("browser/javascript_can_open_windows", false);
-    }
-    if (!mainSettings->contains("browser/javascript_can_close_windows")) {
-        mainSettings->setValue("browser/javascript_can_close_windows", false);
-    }
-    if (!mainSettings->contains("browser/webgl")) {
-        mainSettings->setValue("browser/webgl", false);
-    }
-    if (!mainSettings->contains("browser/java")) {
-        mainSettings->setValue("browser/java", false);
-    }
-    if (!mainSettings->contains("browser/plugins")) {
-        mainSettings->setValue("browser/plugins", true);
-    }
-    // Don't break on SSL errors
-    if (!mainSettings->contains("browser/ignore_ssl_errors")) {
-        mainSettings->setValue("browser/ignore_ssl_errors", true);
-    }
-    if (!mainSettings->contains("browser/cookiejar")) {
-        mainSettings->setValue("browser/cookiejar", false);
-    }
-    // Show default homepage if window closed by javascript
-    if (!mainSettings->contains("browser/show_homepage_on_window_close")) {
-        mainSettings->setValue("browser/show_homepage_on_window_close", true);
-    }
-
-    if (!mainSettings->contains("browser/startup_load_delayed")) {
-        mainSettings->setValue("browser/startup_load_delayed", true);
-    }
-    if (!mainSettings->contains("browser/startup_load_delay")) {
-        mainSettings->setValue("browser/startup_load_delay", 100);
-    }
-
-    if (!mainSettings->contains("browser/disable_hotkeys")) {
-        mainSettings->setValue("browser/disable_hotkeys", false);
-    }
-
-
-    if (!mainSettings->contains("signals/enable")) {
-        mainSettings->setValue("signals/enable", true);
-    }
-    if (!mainSettings->contains("signals/SIGUSR1")) {
-        mainSettings->setValue("signals/SIGUSR1", "");
-    }
-    if (!mainSettings->contains("signals/SIGUSR2")) {
-        mainSettings->setValue("signals/SIGUSR2", "");
-    }
-
-
-    if (!mainSettings->contains("inspector/enable")) {
-        mainSettings->setValue("inspector/enable", false);
-    }
-    if (!mainSettings->contains("inspector/visible")) {
-        mainSettings->setValue("inspector/visible", false);
-    }
-
-
-    if (!mainSettings->contains("event-sounds/enable")) {
-        mainSettings->setValue("event-sounds/enable", false);
-    }
-    if (!mainSettings->contains("event-sounds/window-clicked")) {
-        mainSettings->setValue("event-sounds/window-clicked", RESOURCES"window-clicked.ogg");
-    }
-    if (!mainSettings->contains("event-sounds/link-clicked")) {
-        mainSettings->setValue("event-sounds/link-clicked", RESOURCES"window-clicked.ogg");
-    }
-
-    if (!mainSettings->contains("cache/enable")) {
-        mainSettings->setValue("cache/enable", false);
-    }
-    if (!mainSettings->contains("cache/location")) {
-        QString location = QStandardPaths::writableLocation(QStandardPaths::CacheLocation);
-
-        QDir d = QDir(location);
-        location += d.separator();
-        location += mainSettings->value("application/name").toString();
-        d.setPath(location);
-        mainSettings->setValue("cache/location", d.absolutePath());
-    }
-    if (!mainSettings->contains("cache/size")) {
-        mainSettings->setValue("cache/size", 100*1000*1000);
-    }
-    if (!mainSettings->contains("cache/clear-on-start")) {
-        mainSettings->setValue("cache/clear-on-start", false);
-    }
-    if (!mainSettings->contains("cache/clear-on-exit")) {
-        mainSettings->setValue("cache/clear-on-exit", false);
-    }
-
-    if (!mainSettings->contains("printing/enable")) {
-        mainSettings->setValue("printing/enable", false);
-    }
-    if (!mainSettings->contains("printing/show-printer-dialog")) {
-        mainSettings->setValue("printing/show-printer-dialog", false);
-    }
-    if (!mainSettings->contains("printing/printer")) {
-        mainSettings->setValue("printing/printer", "default");
-    }
-    if (!mainSettings->contains("printing/page_margin_left")) {
-        mainSettings->setValue("printing/page_margin_left", 5);
-    }
-    if (!mainSettings->contains("printing/page_margin_top")) {
-        mainSettings->setValue("printing/page_margin_top", 5);
-    }
-    if (!mainSettings->contains("printing/page_margin_right")) {
-        mainSettings->setValue("printing/page_margin_right", 5);
-    }
-    if (!mainSettings->contains("printing/page_margin_bottom")) {
-        mainSettings->setValue("printing/page_margin_bottom", 5);
-    }
-
-    if (!mainSettings->contains("attach/javascripts")) {
-        mainSettings->setValue("attach/javascripts", "");
-    }
-    if (!mainSettings->contains("attach/styles")) {
-        mainSettings->setValue("attach/styles", "");
-    }
-    if (!mainSettings->contains("view/hide_mouse_cursor")) {
-        mainSettings->setValue("view/hide_mouse_cursor", false);
+    QHash<QString, QVariant>::const_iterator i = defaultSettings.constBegin();
+    while (i != defaultSettings.constEnd()) {
+        if (!mainSettings->contains(i.key())) {
+            mainSettings->setValue(i.key(),i.value());
+        }
+        i++;
     }
 
     mainSettings->sync();
@@ -717,9 +615,7 @@ void MainWindow::urlChanged(const QUrl &url)
     isSelectionDisabled = false;
     isUrlRealyChanged = true;
 
-    if (mainSettings->contains("view/page_scale")) {
-        view->page()->setZoomFactor(mainSettings->value("view/page_scale").toReal());
-    }
+    view->updateZoom();
 
     // This is real link clicked
     view->playSound("event-sounds/link-clicked");

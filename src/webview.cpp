@@ -12,7 +12,7 @@
 
 #include "mainwindow.h"
 
-WebView::WebView(QWidget* parent): QWebEngineView(parent)
+WebView::WebView(MainWindow* parent): QWebEngineView(parent)
 {
     player = NULL;
     loader = NULL;
@@ -31,11 +31,11 @@ void WebView::initSignals()
             this,
             SLOT(handleWindowCloseRequested()));
 
-    connect(page(),
+/*    connect(page(),
             SIGNAL(printRequested(QWebEnginePage*)),
             this,
             SLOT(handlePrintRequested(QWebEnginePage*)));
-
+*/
     connect(page(),
             SIGNAL(iconUrlChanged(QUrl)),
             this,
@@ -48,6 +48,17 @@ void WebView::setPage(QWebEnginePage *page)
     initSignals();
 }
 
+void WebView::updateZoom() {
+    qreal settingsZoom = 1;
+    qreal pixelRatio = 1;
+    if (mainSettings->contains("view/scale_with_dpi")) {
+        pixelRatio = static_cast<MainWindow*>(parent())->getPixelRatio();
+    }
+    if (mainSettings->contains("view/page_scale")) {
+        settingsZoom = mainSettings->value("view/page_scale").toReal();
+    }
+    page()->setZoomFactor(pixelRatio*settingsZoom);
+}
 
 void WebView::setSettings(QSettings *settings)
 {
@@ -218,18 +229,19 @@ QWebEngineView *WebView::createWindow(QWebEnginePage::WebWindowType type)
     return loader;
 }
 
+#ifdef PRINTING_POSSIBLE
 void WebView::handlePrintRequested(QWebEnginePage *wf)
 {
     //TODO: currently probably impossible;
-    #if 0
+
     qDebug() << "Handle printRequested...";
     if (mainSettings->value("printing/enable").toBool()) {
         if (!mainSettings->value("printing/show-printer-dialog").toBool()) {
             if (printer->printerState() != QPrinter::Error) {
                 qDebug() << "... got printer, try use it";
-                wf->print(printer);
+                this->;
             }
         }
     }
-    #endif
 }
+#endif
