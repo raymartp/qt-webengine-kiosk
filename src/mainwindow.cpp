@@ -43,7 +43,6 @@
 
 #include <QtGui>
 #include <QtNetwork>
-#include <QtWebKit>
 #include <QtWebEngine>
 #include <QDebug>
 #include "mainwindow.h"
@@ -51,7 +50,6 @@
 #include <QStandardPaths>
 #include <QApplication>
 #include <QDesktopWidget>
-#include <QtWebKitWidgets/QWebFrame>
 #include <QtWebEngineWidgets>
 
 #include "cachingnm.h"
@@ -288,7 +286,7 @@ void MainWindow::cleanupSlot()
     qDebug("Cleanup Slot (application exit)");
     handler->stop();
     clearCacheOnExit();
-    QWebSettings::clearMemoryCaches();
+    //QWebEngineSettings::clearMemoryCaches();
 }
 
 void MainWindow::showFullScreen() {
@@ -402,13 +400,13 @@ void MainWindow::keyPressEvent(QKeyEvent *event)
         view->reload();
         break;
     case Qt::Key_F12:
-        if (mainSettings->value("inspector/enable").toBool()) {
+ /*       if (mainSettings->value("inspector/enable").toBool()) {
             if (!inspector->isVisible()) {
                 inspector->setVisible(true);
             } else {
                 inspector->setVisible(false);
             }
-        }
+        }*/
         break;
     case Qt::Key_F11:
         if (isFullScreen()) {
@@ -695,7 +693,7 @@ void MainWindow::startLoading()
 
     adjustTitle();
 
-    QWebSettings::clearMemoryCaches();
+    //QWebEngineSettings::clearMemoryCaches();
 
     if (mainSettings->value("view/show_load_progress").toBool()) {
         loadProgress->show();

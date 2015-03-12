@@ -43,14 +43,13 @@
 #include <QProgressBar>
 #include <QMainWindow>
 #include <QtNetwork>
-#include <QtWebKit>
 #include <QtWebEngine>
 
 #ifdef USE_TESTLIB
 #include <QtTest/QTestEventList>
 #endif
 
-#include <QtWebKitWidgets/QWebInspector>
+//#include <QtWebEngineWidgets/QWebInspector>
 
 #include "webview.h"
 #include "anyoption.h"
@@ -115,7 +114,7 @@ private:
 
     QSettings *mainSettings;
     QNetworkDiskCache *diskCache;
-    QWebInspector *inspector;
+    //QWebInspector *inspector;
 
     QKeyEvent * eventExit;
 

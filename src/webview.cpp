@@ -2,7 +2,6 @@
 
 #include <QtDebug>
 #include <QtGui>
-#include <QtWebKit>
 #include <QtWebEngine>
 #include "webview.h"
 #include <signal.h>

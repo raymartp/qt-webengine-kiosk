@@ -3,7 +3,6 @@
 
 #include <QtNetwork>
 
-#include <QtWebKitWidgets/QWebView>
 #include <QWebEngineView>
 
 class FakeWebView : public QWebEngineView
