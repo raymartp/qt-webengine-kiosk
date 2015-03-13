@@ -92,6 +92,7 @@ void MainWindow::init(QCommandLineParser &options)
         {"application/name", "Qt WebEngine Kiosk"},
         {"application/version", VERSION},
         {"application/icon", ICON },
+        {"application/opengl_mode", "auto"},
         {"proxy/enable", false },
         {"proxy/system", true },
         {"proxy/host", "proxy.example.com" },
@@ -174,6 +175,30 @@ void MainWindow::init(QCommandLineParser &options)
         bool ok;
         int monitorNum = monitorString.toInt(&ok);
         manualScreen = ok ? monitorNum : 0;
+    }
+
+    QMetaEnum glModeEnum = MainWindow::staticMetaObject.enumerator(MainWindow::staticMetaObject.indexOfEnumerator("GlMode"));
+
+    QString glMode;
+    if ((glMode = options.value("opengl")).isEmpty()) {
+        glMode = mainSettings->value("application/opengl_mode").toString();
+    }
+    switch (glModeEnum.keyToValue(glMode.toUpper().toLatin1())) {
+    case NATIVE:
+        qApp->setAttribute(Qt::AA_UseDesktopOpenGL);
+        qDebug() << "attempting to use native OpenGL";
+        break;
+    case ANGLE:
+        qApp->setAttribute(Qt::AA_UseOpenGLES);
+        qDebug() << "attempting to use OpenGL ES (or ANGLE, on Windows)";
+        break;
+    case SOFTWARE:
+        qDebug() << "using software rendering";
+        qApp->setAttribute(Qt::AA_UseSoftwareOpenGL);
+        break;
+    case AUTO:
+    default:
+        break;
     }
 
     if (mainSettings->value("signals/enable").toBool()) {

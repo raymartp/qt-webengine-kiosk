@@ -69,11 +69,13 @@ struct keyFunction {
 class MainWindow : public QMainWindow
 {
     Q_OBJECT
+    Q_ENUMS(GlMode)
 
 public:
     explicit MainWindow();
 
     void init(QCommandLineParser&);
+    enum GlMode {  AUTO, NATIVE, ANGLE, SOFTWARE };
 
     void clearCache();
     void clearCacheOnExit();
@@ -117,6 +119,7 @@ protected:
     void putWindowUp();
     void keyPressEvent(QKeyEvent *event);
     void updatePixelRatio();
+
 
 private:
     WebView* view;                      // Webkit Page View

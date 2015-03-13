@@ -47,11 +47,18 @@ int main(int argc, char * argv[])
     parser.addHelpOption();
     parser.addVersionOption();
 
+    QStringList glModes;
+    QMetaEnum glMode = MainWindow::staticMetaObject.enumerator(MainWindow::staticMetaObject.indexOfEnumerator("GlMode"));
+    for (int value = 0; value < glMode.keyCount(); value++) {
+        glModes.append(QString(glMode.valueToKey(value)));
+    }
+
     QList<QCommandLineOption> options = QList<QCommandLineOption>({
             {{"clear-cache","C"}, "Clear cached request data"},
             {{"uri","u"}, "Set starting url to <uri>", "uri"},
             {{"monitor", "m"}, "Display window on the <n>th monitor", "n"},
-            {{"config", "c"}, "Use <file> to configure this instance of qt-webengine-kiosk", "file"}
+            {{"config", "c"}, "Use <file> to configure this instance of qt-webengine-kiosk", "file"},
+            {"opengl", QString()+"Use <"+glModes.join('|')+"> for hardware accelerated rendering", "system"}
             });
 
     parser.addOptions(options);
