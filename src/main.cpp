@@ -39,8 +39,12 @@
 
 int main(int argc, char * argv[])
 {
-    QApplication app(argc, argv);
-    app.setApplicationName("Qt WebEngine Kiosk");
+    QStringList qargv;
+    for (int i=0; i<argc; i++) {
+        qargv.append(QString(argv[i]));
+    }
+
+    //QApplication::setApplicationName("Qt WebEngine Kiosk");
 
     QCommandLineParser parser;
     parser.setApplicationDescription("A kiosk browser based on Qt's Chromium-derived WebEngine component");
@@ -48,9 +52,9 @@ int main(int argc, char * argv[])
     parser.addVersionOption();
 
     QStringList glModes;
-    QMetaEnum glMode = MainWindow::staticMetaObject.enumerator(MainWindow::staticMetaObject.indexOfEnumerator("GlMode"));
-    for (int value = 0; value < glMode.keyCount(); value++) {
-        glModes.append(QString(glMode.valueToKey(value)));
+    QMetaEnum glModeEnum = MainWindow::staticMetaObject.enumerator(MainWindow::staticMetaObject.indexOfEnumerator("GlMode"));
+    for (int value = 0; value < glModeEnum.keyCount(); value++) {
+        glModes.append(QString(glModeEnum.valueToKey(value)));
     }
 
     QList<QCommandLineOption> options = QList<QCommandLineOption>({
@@ -62,8 +66,33 @@ int main(int argc, char * argv[])
             });
 
     parser.addOptions(options);
-    parser.process(app);
 
+    parser.parse(qargv);
+    qDebug() << parser.errorText();
+    QString glMode;
+    if ((glMode = parser.value("opengl")).isEmpty())
+        glMode = "auto";
+    switch (glModeEnum.keyToValue(glMode.toUpper().toLatin1())) {
+    case MainWindow::NATIVE:
+        QCoreApplication::setAttribute(Qt::AA_UseDesktopOpenGL);
+        qDebug() << "attempting to use native OpenGL";
+        break;
+    case MainWindow::ANGLE:
+        QCoreApplication::setAttribute(Qt::AA_UseOpenGLES);
+        qDebug() << "attempting to use OpenGL ES (or ANGLE, on Windows)";
+        break;
+    case MainWindow::SOFTWARE:
+        qDebug() << "using software rendering";
+        QCoreApplication::setAttribute(Qt::AA_UseSoftwareOpenGL);
+        break;
+    case MainWindow::AUTO:
+    default:
+        qDebug() << "using automatic gl";
+        break;
+    }
+
+    QApplication app(argc, argv);
+    parser.process(app);
 
 
     MainWindow *browser = new MainWindow();
