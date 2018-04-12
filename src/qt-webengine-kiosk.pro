@@ -31,7 +31,7 @@ PLAYER = MULTIMEDIA
         PREFIX = /usr/local
     }
 
-    ICON = $${PREFIX}/share/icons/$${TARGET}.png
+#    ICON = $${PREFIX}/share/icons/$${TARGET}.png
     DEFINES += RESOURCES=\\\"$${PREFIX}/share/$${TARGET}/\\\"
     DEFINES += ICON=\\\"$${ICON}\\\"
 
@@ -56,10 +56,8 @@ SOURCES += main.cpp\
     mainwindow.cpp \
     webview.cpp \
     fakewebview.cpp \
-    cachingnm.cpp \
     unixsignals.cpp \
     socketpair.cpp \
-    persistentcookiejar.cpp\
     player/multimedia.cpp
 
 HEADERS  += mainwindow.h \
@@ -67,10 +65,8 @@ HEADERS  += mainwindow.h \
     config.h \
     qplayer.h \
     fakewebview.h \
-    cachingnm.h \
     unixsignals.h \
     socketpair.h \
-    persistentcookiejar.h \
     player/multimedia.h
 
 # DEBUG
@@ -81,7 +77,7 @@ HEADERS  += mainwindow.h \
 
 target.path = $${PREFIX}/bin
 
-icon.files = ../resources/$${TARGET}.png
-icon.path = $${PREFIX}/share/icons
+# icon.files = ../resources/$${TARGET}.png
+# icon.path = $${PREFIX}/share/icons
 
 INSTALLS += target icon
