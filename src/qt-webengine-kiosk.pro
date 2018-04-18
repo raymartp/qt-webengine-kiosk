@@ -4,7 +4,7 @@
 #
 #-------------------------------------------------
 
-QT       = core gui network widgets printsupport multimedia testlib webenginewidgets
+QT       = core gui network widgets printsupport multimedia testlib webenginewidgets webengine
 
 CONFIG += console link_pkgconfig c++11
 TARGET = qt-webengine-kiosk
