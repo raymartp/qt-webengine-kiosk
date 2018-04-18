@@ -90,6 +90,7 @@ int main(int argc, char * argv[])
         qDebug() << "using automatic gl";
         break;
     }
+    QCoreApplication::setAttribute(Qt::AA_EnableHighDpiScaling);
 
     QApplication app(argc, argv);
     parser.process(app);
