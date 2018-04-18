@@ -39,6 +39,7 @@
 
 int main(int argc, char * argv[])
 {
+    qDebug() << "Start!!!!";
     QStringList qargv;
     for (int i=0; i<argc; i++) {
         qargv.append(QString(argv[i]));
@@ -95,6 +96,7 @@ int main(int argc, char * argv[])
     QApplication app(argc, argv);
     parser.process(app);
 
+    qDebug() << "Hey!!!!";
 
     MainWindow *browser = new MainWindow();
     browser->init(parser);

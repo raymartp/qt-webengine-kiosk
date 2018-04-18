@@ -16,8 +16,8 @@ CONFIG(debug, debug|release) {
     message(Debug build)
 } else {
 # here comes release specific statements
-    CONFIG -= debug
-    DEFINES += QT_NO_DEBUG_OUTPUT
+#    CONFIG -= debug
+#    DEFINES += QT_NO_DEBUG_OUTPUT
 }
 
 DEFINES += VERSION=\\\"$${VERSION}\\\"

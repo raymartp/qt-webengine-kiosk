@@ -13,8 +13,8 @@ CONFIG(debug, debug|release) {
 } else {
 # here comes release specific statements
     message(Release build)
-    CONFIG -= debug
-    DEFINES += QT_NO_DEBUG_OUTPUT
+#    CONFIG -= debug
+    #DEFINES += QT_NO_DEBUG_OUTPUT
 }
 message(testing)
 SUBDIRS += src/qt-webengine-kiosk.pro
